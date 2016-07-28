@@ -1,3 +1,5 @@
+// can be viewed at https://www.khanacademy.org/computer-programming/monte-carlo-finding-the-value-of-pi/6530004791197696
+
 // change these if you're changing size of canvas
 // NOTE: changing anything but SQUARELENGTH will require adjusting of buttons + labels
 var CANVASWIDTH = 600;

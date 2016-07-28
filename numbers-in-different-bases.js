@@ -1,4 +1,3 @@
-// can be viewed at https://www.khanacademy.org/computer-programming/numbers-in-different-bases-visualization/5886855988772864
 var CANVASWIDTH = 600;
 var CANVASHEIGHT = 400;
 var PADDING = 15;
@@ -6,7 +5,7 @@ var PADDING = 15;
 var LEGENDWIDTH= 60;
 var VALUEWIDTH = 192;
 var BLOCKWIDTH = 91;
-var base = 10;
+var base = 16;
 // can support up to base 16
 var digits = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G'];
 
@@ -208,7 +207,7 @@ var blocksToNum = function()
 var numToBlocks = function(number)
 {
     var index = PlaceholderArray.length - 1;
-    while(number > 0)
+    while(index >= 0)
     {
         var counter = 0;
         while (number >= PlaceholderArray[index].value)
@@ -230,9 +229,10 @@ var ValueHolder = function(config)
     this.width = config.width ||VALUEWIDTH;
     this.height = config.height||70;
     this.color = config.color;
+    this.value = config.value;
 };
 // draw white inside box and print value
-ValueHolder.prototype.update = function(value)
+ValueHolder.prototype.update = function()
 {
     // white content box
     noStroke();
@@ -243,8 +243,8 @@ ValueHolder.prototype.update = function(value)
     fill(BLACK);
     textAlign(CENTER, CENTER);
     // find what the textSize should be
-    value = value.toString();
-    var width = value.length;
+    this.value = this.value.toString();
+    var width = this.value.length;
     // ensure that shorter numbers don't cause major overflow
     if (width < 4)
     {
@@ -252,14 +252,53 @@ ValueHolder.prototype.update = function(value)
     }
     textSize(VALUEWIDTH/width);
     // centering text within box
-    text(value,
+    text(this.value,
              this.x + this.width/2, this.y+ this.height/2);
 };
+ValueHolder.prototype.addArrows = function()
+{
+    fill(WHITE);
+    stroke(BLACK);
+    strokeWeight(2);
+    triangle(this.x + this.width/2, this.y - PADDING, 
+            this.x + 5*PADDING, this.y + PADDING/4,
+            this.x + this.width - 5*PADDING, this.y + PADDING/4);
+    triangle(this.x + this.width/2, this.y + this.height + PADDING, 
+            this.x + 5*PADDING, this.y + this.height - PADDING/4,
+            this.x + this.width - 5*PADDING, this.y + this.height - PADDING/4);
+};
 
-var value = new ValueHolder
+ValueHolder.prototype.isWithinTopArrow = function()
+{
+    return mouseX > this.x + 5*PADDING &&
+           mouseX < this.x + this.width - 5*PADDING &&
+           mouseY > this.y - PADDING &&
+           mouseY < this.y + PADDING/4;
+};
+ValueHolder.prototype.isWithinBottomArrow = function()
+{
+     return mouseX > this.x + 5*PADDING &&
+           mouseX < this.x + this.width - 5*PADDING &&
+           mouseY < this.y + this.height + PADDING &&
+           mouseY > this.y + this.height - PADDING/4;
+};
+ValueHolder.prototype.handleMouseClick = function()
+{
+    if(this.isWithinTopArrow())
+    {
+        this.value++;
+        numToBlocks(this.value);
+    }
+    else if(this.isWithinBottomArrow() && this.value > 0)
+    {
+        this.value--;
+        numToBlocks(this.value);
+    }
+};
+var valuebox = new ValueHolder
 ({
     x: (CANVASWIDTH - LEGENDWIDTH - VALUEWIDTH)/2,
-    y: 220,
+    y: 225,
     color: OUTLINEGRAY,
 });
 // button used for changebase
@@ -293,13 +332,17 @@ Button.prototype.isMouseInside = function()
            mouseY < (this.y + this.height);
 };
 initBlocks();
-
+valuebox.addArrows();
+valuebox.value = blocksToNum();
+valuebox.update();
 var draw = function() {
       mouseClicked = function() {
          for(var i = 0, n = PlaceholderArray.length; i < n; i++)
          {
             PlaceholderArray[i].handleMouseClick();
          }
-         value.update(blocksToNum());
+         valuebox.handleMouseClick();
+         valuebox.value = blocksToNum();
+         valuebox.update();
       };
 };

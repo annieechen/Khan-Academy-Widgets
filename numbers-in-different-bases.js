@@ -6,13 +6,12 @@ var LEGENDWIDTH= 60;
 var VALUEWIDTH = 192;
 var BASEWIDTH = 80;
 var BLOCKWIDTH = 91;
+var NUMBLOCKS = 5;
 // can support up to base 16
-var digits = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G'];
+var digits = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
 
-var Base = 5;
 var f = createFont("monospace");
 textFont(f);
-
 colorMode(HSB);
 var WHITE = color(0, 0, 255);
 var BLACK = color(0,0,0);
@@ -23,9 +22,36 @@ var MAXSAT = 255;
 var MAXHUE = 200;
 // to store the colors in HSB for clicking through
 var colorArray = [];
+
+// labels used to hold header and content
+var numHolder = function(config) 
+{
+    this.x = config.x;
+    this.y = config.y;
+    this.width = config.width ||VALUEWIDTH;
+    this.height = config.height||63;
+    this.value = config.value;
+};
+
+var basebox = new numHolder
+({
+    x : (CANVASWIDTH - LEGENDWIDTH - BASEWIDTH)/2,
+    y: 320,
+    width : BASEWIDTH,
+    value: 2,
+});
+
+var valuebox = new numHolder
+({
+    x: (CANVASWIDTH - LEGENDWIDTH - VALUEWIDTH)/2,
+    y: 230,
+    value: 0
+});
 // create based on how many are needed (will be same # as
 var createColorArray = function(baseNum)
 {
+    // first, make sure old values wiped out
+    colorArray.length = 0;
     var colorInterval = MAXHUE/(baseNum - 1);
     for(var i = 0; i <= MAXHUE + 1; i += colorInterval)
     {
@@ -51,6 +77,12 @@ var legend = function(baseNum)
         text(digits[index],CANVASWIDTH - (LEGENDWIDTH/2), i + blockHeight/2);
     }
 };
+var setUpBase = function(base)
+{
+    createColorArray(base);
+    legend(base);
+};
+// object for each number block
 var Placeholder = function(config) 
 {
     this.x = config.x || 12;
@@ -82,9 +114,6 @@ Placeholder.prototype.drawArrow = function(isTop, arrowColor)
 };
 Placeholder.prototype.update = function()
 {
-    // need to decide what best UI is 
-    // stroke(GRAY);
-    // strokeWeight(5);
     noStroke();
     fill(colorArray[this.multiplier]);
     rect(this.x, this.y, this.width, this.height, 5);
@@ -94,7 +123,7 @@ Placeholder.prototype.update = function()
     textAlign(CENTER, CENTER);
     text(digits[this.multiplier], this.x + this.width/2, this.y + this.height/2);
     // add up arrow if possible
-    if(this.multiplier < Base - 1)
+    if(this.multiplier < basebox.value - 1)
     {
         this.drawArrow(true, colorArray[this.multiplier + 1]);
     }
@@ -115,6 +144,9 @@ Placeholder.prototype.update = function()
     }
 };
 Placeholder.prototype.draw = function() {
+    // wipe out existing letters if there
+    fill(WHITE);
+    rect(this.x, this.y + this.height + PADDING, this.width, PADDING*3);
     fill(BLACK);
     // add label below to show what digit this is
     textSize(24);
@@ -152,7 +184,7 @@ Placeholder.prototype.handleMouseClick = function()
     if (this.isMouseInsideMain())
     {
         this.multiplier++;
-        if(this.multiplier === Base)
+        if(this.multiplier >= basebox.value)
         {
             this.multiplier = 0;
         }
@@ -160,7 +192,7 @@ Placeholder.prototype.handleMouseClick = function()
     else
     {
         // if top arrow is there
-        if (this.multiplier < Base - 1)
+        if (this.multiplier < basebox.value - 1)
         {
             if (this.isMouseInsideTop())
             {
@@ -179,19 +211,6 @@ Placeholder.prototype.handleMouseClick = function()
     this.update();
 };
 var PlaceholderArray = [];
-var initBlocks = function()
-{
-    // make blocks right oriented (so can start w/ 0)
-    for (var i = CANVASWIDTH - LEGENDWIDTH - BLOCKWIDTH - PADDING, index = 0; 
-         i > 0; i -= BLOCKWIDTH + PADDING, index++)
-    {
-        var test = new Placeholder({});
-        test.x = i;
-        test.value = pow(Base, index);
-        test.draw();
-        PlaceholderArray.push(test);
-    }
-};
 var blocksToNum = function()
 {
     var count = 0;
@@ -218,18 +237,25 @@ var numToBlocks = function(number)
         index --;
     }
 }; 
-
-// labels used to hold header and content
-var ValueHolder = function(config) 
+var initBlocks = function()
 {
-    this.x = config.x;
-    this.y = config.y;
-    this.width = config.width ||VALUEWIDTH;
-    this.height = config.height||63;
-    this.value = config.value;
+    // clear placeholder array
+    PlaceholderArray.length = 0;
+    // make blocks right oriented (so can start w/ 0)
+    for (var i = CANVASWIDTH - LEGENDWIDTH - BLOCKWIDTH - PADDING, index = 0; 
+         i > 0; i -= BLOCKWIDTH + PADDING, index++)
+    {
+        var temp = new Placeholder({});
+        temp.x = i;
+        temp.value = pow(basebox.value, index);
+        temp.multiplier = 0;
+        temp.draw();
+        PlaceholderArray.push(temp);
+    }
+    numToBlocks(valuebox.value);
 };
 // draw white inside box and print value
-ValueHolder.prototype.update = function()
+numHolder.prototype.update = function()
 {
     // white content box
     noStroke();
@@ -253,11 +279,7 @@ ValueHolder.prototype.update = function()
              this.x + this.width/2, this.y + this.height/2 - PADDING/8);
 };
 
-var valuebox = new ValueHolder
-({
-    x: (CANVASWIDTH - LEGENDWIDTH - VALUEWIDTH)/2,
-    y: 230,
-});
+
 // adds vertical arrows
 valuebox.addVArrows = function()
 {
@@ -287,7 +309,9 @@ valuebox.isWithinBottomArrow = function()
 };
 valuebox.handleMouseClick = function()
 {
-    if(this.isWithinTopArrow())
+    // make sure number doesn't go above what we can represent
+    if(this.isWithinTopArrow() &&
+       this.value < (pow(basebox.value, NUMBLOCKS) - 1))
     {
         this.value++;
         numToBlocks(this.value);
@@ -298,13 +322,6 @@ valuebox.handleMouseClick = function()
         numToBlocks(this.value);
     }
 };
-var basebox = new ValueHolder
-({
-    x : (CANVASWIDTH - LEGENDWIDTH - BASEWIDTH)/2,
-    y: 320,
-    width : BASEWIDTH,
-    value: 10,
-});
 basebox.addHArrows = function()
 {
     fill(OUTLINEGRAY);
@@ -340,13 +357,14 @@ basebox.handleMouseClick = function()
     if(this.isWithinRightArrow() && this.value < 16)
     {
         this.value++;
-        Base++;
     }
-    else if(this.isWithinLeftArrow() && this.value > 0)
+    else if(this.isWithinLeftArrow() && this.value > 2)
     {
         this.value--;
     }
     this.update();
+    initBlocks();
+    setUpBase(this.value);
 };
 basebox.update();
 basebox.addHArrows();
@@ -381,15 +399,12 @@ Button.prototype.isMouseInside = function()
            mouseY < (this.y + this.height);
 };
 initBlocks();
+setUpBase(basebox.value);
 valuebox.addVArrows();
 valuebox.value = blocksToNum();
 valuebox.update();
-var setUpBase = function(base)
-{
-    createColorArray(base);
-    legend(base);
-};
-setUpBase(Base);
+
+
 
 var draw = function() {
       mouseClicked = function() {

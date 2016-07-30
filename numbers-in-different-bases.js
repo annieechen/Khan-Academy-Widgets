@@ -4,18 +4,19 @@ var PADDING = 15;
 
 var LEGENDWIDTH= 60;
 var VALUEWIDTH = 192;
+var BASEWIDTH = 80;
 var BLOCKWIDTH = 91;
-var base = 16;
 // can support up to base 16
 var digits = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G'];
 
+var Base = 5;
 var f = createFont("monospace");
 textFont(f);
 
 colorMode(HSB);
 var WHITE = color(0, 0, 255);
 var BLACK = color(0,0,0);
-var OUTLINEGRAY = color(302, 40, 250);
+var OUTLINEGRAY = color(279, 1, 100);
 background(WHITE);
 var MAXSAT = 255;
 // to keep loop at violet rather than back to red
@@ -31,11 +32,10 @@ var createColorArray = function(baseNum)
         colorArray.push(color(i, MAXSAT, MAXSAT));
     }
 };
-createColorArray(base);
 
 var legend = function(baseNum)
 {
-    var blockHeight = CANVASHEIGHT/base;
+    var blockHeight = CANVASHEIGHT/baseNum;
     for(var i = 0, index = 0; i <= CANVASHEIGHT; i+= blockHeight, index++)
     {
         // create a rectangle w/ color and la
@@ -51,8 +51,6 @@ var legend = function(baseNum)
         text(digits[index],CANVASWIDTH - (LEGENDWIDTH/2), i + blockHeight/2);
     }
 };
-legend(base);
-
 var Placeholder = function(config) 
 {
     this.x = config.x || 12;
@@ -96,7 +94,7 @@ Placeholder.prototype.update = function()
     textAlign(CENTER, CENTER);
     text(digits[this.multiplier], this.x + this.width/2, this.y + this.height/2);
     // add up arrow if possible
-    if(this.multiplier < base - 1)
+    if(this.multiplier < Base - 1)
     {
         this.drawArrow(true, colorArray[this.multiplier + 1]);
     }
@@ -154,7 +152,7 @@ Placeholder.prototype.handleMouseClick = function()
     if (this.isMouseInsideMain())
     {
         this.multiplier++;
-        if(this.multiplier === base)
+        if(this.multiplier === Base)
         {
             this.multiplier = 0;
         }
@@ -162,7 +160,7 @@ Placeholder.prototype.handleMouseClick = function()
     else
     {
         // if top arrow is there
-        if (this.multiplier < base - 1)
+        if (this.multiplier < Base - 1)
         {
             if (this.isMouseInsideTop())
             {
@@ -189,7 +187,7 @@ var initBlocks = function()
     {
         var test = new Placeholder({});
         test.x = i;
-        test.value = pow(base, index);
+        test.value = pow(Base, index);
         test.draw();
         PlaceholderArray.push(test);
     }
@@ -227,8 +225,7 @@ var ValueHolder = function(config)
     this.x = config.x;
     this.y = config.y;
     this.width = config.width ||VALUEWIDTH;
-    this.height = config.height||70;
-    this.color = config.color;
+    this.height = config.height||63;
     this.value = config.value;
 };
 // draw white inside box and print value
@@ -244,22 +241,28 @@ ValueHolder.prototype.update = function()
     textAlign(CENTER, CENTER);
     // find what the textSize should be
     this.value = this.value.toString();
-    var width = this.value.length;
+    var wordwidth = this.value.length;
     // ensure that shorter numbers don't cause major overflow
-    if (width < 4)
+    if (wordwidth < 4)
     {
-        width = 4;
+        wordwidth = 4;
     }
-    textSize(VALUEWIDTH/width);
+    textSize(this.width/wordwidth);
     // centering text within box
     text(this.value,
-             this.x + this.width/2, this.y+ this.height/2);
+             this.x + this.width/2, this.y + this.height/2 - PADDING/8);
 };
-ValueHolder.prototype.addArrows = function()
+
+var valuebox = new ValueHolder
+({
+    x: (CANVASWIDTH - LEGENDWIDTH - VALUEWIDTH)/2,
+    y: 230,
+});
+// adds vertical arrows
+valuebox.addVArrows = function()
 {
-    fill(WHITE);
-    stroke(BLACK);
-    strokeWeight(2);
+    fill(OUTLINEGRAY);
+    noStroke();
     triangle(this.x + this.width/2, this.y - PADDING, 
             this.x + 5*PADDING, this.y + PADDING/4,
             this.x + this.width - 5*PADDING, this.y + PADDING/4);
@@ -268,21 +271,21 @@ ValueHolder.prototype.addArrows = function()
             this.x + this.width - 5*PADDING, this.y + this.height - PADDING/4);
 };
 
-ValueHolder.prototype.isWithinTopArrow = function()
+valuebox.isWithinTopArrow = function()
 {
     return mouseX > this.x + 5*PADDING &&
            mouseX < this.x + this.width - 5*PADDING &&
            mouseY > this.y - PADDING &&
            mouseY < this.y + PADDING/4;
 };
-ValueHolder.prototype.isWithinBottomArrow = function()
+valuebox.isWithinBottomArrow = function()
 {
      return mouseX > this.x + 5*PADDING &&
            mouseX < this.x + this.width - 5*PADDING &&
            mouseY < this.y + this.height + PADDING &&
            mouseY > this.y + this.height - PADDING/4;
 };
-ValueHolder.prototype.handleMouseClick = function()
+valuebox.handleMouseClick = function()
 {
     if(this.isWithinTopArrow())
     {
@@ -295,12 +298,58 @@ ValueHolder.prototype.handleMouseClick = function()
         numToBlocks(this.value);
     }
 };
-var valuebox = new ValueHolder
+var basebox = new ValueHolder
 ({
-    x: (CANVASWIDTH - LEGENDWIDTH - VALUEWIDTH)/2,
-    y: 225,
-    color: OUTLINEGRAY,
+    x : (CANVASWIDTH - LEGENDWIDTH - BASEWIDTH)/2,
+    y: 320,
+    width : BASEWIDTH,
+    value: 10,
 });
+basebox.addHArrows = function()
+{
+    fill(OUTLINEGRAY);
+    noStroke();
+    strokeWeight(2);
+    // left triangle
+    triangle(this.x - PADDING/2, this.y + this.height/2, 
+             this.x + PADDING, this.y + PADDING*(4/3),
+             this.x + PADDING, this.y + this.height - PADDING*(4/3));
+    // right triangle 
+    triangle(this.x + this.width + PADDING/2, this.y + this.height/2, 
+             this.x + this.width - PADDING, this.y + PADDING*(4/3),
+             this.x + this.width - PADDING, this.y + this.height - PADDING*(4/3             ));
+    // redraw white box over arrow edges
+    this.update();
+};
+basebox.isWithinLeftArrow = function()
+{
+    return mouseX > this.x - PADDING/2 &&
+           mouseX < this.x + PADDING &&
+           mouseY > this.y + PADDING*(4/3) &&
+           mouseY < this.y + this.height - PADDING*(4/3);
+};
+basebox.isWithinRightArrow = function()
+{
+    return mouseX > this.x + this.width - PADDING/2 &&
+           mouseX < this.x + this.width + PADDING &&
+           mouseY > this.y + PADDING*(4/3) &&
+           mouseY < this.y + this.height - PADDING*(4/3);
+};
+basebox.handleMouseClick = function()
+{
+    if(this.isWithinRightArrow() && this.value < 16)
+    {
+        this.value++;
+        Base++;
+    }
+    else if(this.isWithinLeftArrow() && this.value > 0)
+    {
+        this.value--;
+    }
+    this.update();
+};
+basebox.update();
+basebox.addHArrows();
 // button used for changebase
 var Button = function(config)
 {
@@ -332,9 +381,16 @@ Button.prototype.isMouseInside = function()
            mouseY < (this.y + this.height);
 };
 initBlocks();
-valuebox.addArrows();
+valuebox.addVArrows();
 valuebox.value = blocksToNum();
 valuebox.update();
+var setUpBase = function(base)
+{
+    createColorArray(base);
+    legend(base);
+};
+setUpBase(Base);
+
 var draw = function() {
       mouseClicked = function() {
          for(var i = 0, n = PlaceholderArray.length; i < n; i++)
@@ -344,5 +400,7 @@ var draw = function() {
          valuebox.handleMouseClick();
          valuebox.value = blocksToNum();
          valuebox.update();
+         basebox.handleMouseClick();
+         basebox.update();
       };
 };

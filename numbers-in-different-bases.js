@@ -358,13 +358,16 @@ basebox.handleMouseClick = function()
     {
         this.value++;
     }
-    else if(this.isWithinLeftArrow() && this.value > 2)
+    // make sure if incrementing down, can represenet that number in a lower base
+    else if(this.isWithinLeftArrow() &&
+            this.value > 2 && 
+            (valuebox.value <= pow(this.value - 1, NUMBLOCKS)))
     {
         this.value--;
     }
     this.update();
-    initBlocks();
     setUpBase(this.value);
+    initBlocks();
 };
 basebox.update();
 basebox.addHArrows();

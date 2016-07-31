@@ -15,6 +15,8 @@ textFont(f);
 colorMode(HSB);
 var WHITE = color(0, 0, 255);
 var BLACK = color(0,0,0);
+var GREEN = color(80,255, 230);
+var RED = color(0, 255, 230);
 var OUTLINEGRAY = color(279, 1, 100);
 background(WHITE);
 var MAXSAT = 255;
@@ -23,6 +25,8 @@ var MAXHUE = 200;
 // to store the colors in HSB for clicking through
 var colorArray = [];
 
+// which mode of the game
+var LabelsOn = true;
 // labels used to hold header and content
 var numHolder = function(config) 
 {
@@ -76,11 +80,6 @@ var legend = function(baseNum)
         textSize(18 + 16/baseNum);
         text(digits[index],CANVASWIDTH - (LEGENDWIDTH/2), i + blockHeight/2);
     }
-};
-var setUpBase = function(base)
-{
-    createColorArray(base);
-    legend(base);
 };
 // object for each number block
 var Placeholder = function(config) 
@@ -147,10 +146,13 @@ Placeholder.prototype.draw = function() {
     // wipe out existing letters if there
     fill(WHITE);
     rect(this.x, this.y + this.height + PADDING, this.width, PADDING*3);
-    fill(BLACK);
-    // add label below to show what digit this is
-    textSize(24);
-    text(this.value, this.x + this.width/2, this.y + this.height + PADDING*3);
+    if(LabelsOn)
+    {
+        fill(BLACK);
+        // add label below to show what digit this is
+        textSize(24);
+        text(this.value, this.x + this.width/2, this.y + this.height + PADDING*3);
+    }
     this.update();
 };
 // control whether user is mousing over block itself
@@ -253,6 +255,12 @@ var initBlocks = function()
         PlaceholderArray.push(temp);
     }
     numToBlocks(valuebox.value);
+};
+var setUpBase = function(base)
+{
+    createColorArray(base);
+    legend(base);
+    initBlocks();
 };
 // draw white inside box and print value
 numHolder.prototype.update = function()
@@ -376,8 +384,8 @@ var Button = function(config)
 {
     this.x = config.x || 0;
     this.y = config.y || 0;
-    this.width = config.width || 150;
-    this.height = config.height || 50;
+    this.width = config.width || 63;
+    this.height = config.height || 30;
     this.color = config.color;
     this.label = config.label || "Click";
     this.onClick = config.onClick || function() {};
@@ -401,13 +409,41 @@ Button.prototype.isMouseInside = function()
            mouseY > this.y &&
            mouseY < (this.y + this.height);
 };
-initBlocks();
+var labels = new Button
+({
+    x : (CANVASWIDTH - LEGENDWIDTH)*(7/8),
+    y : 360,
+    label : "LABELS",
+    color : GREEN
+});
+labels.handleMouseClick = function()
+{
+    if (this.isMouseInside())
+    {
+        LabelsOn = !LabelsOn;
+        if(LabelsOn)
+        {
+            this.color = GREEN;
+        } 
+        else
+        {
+            this.color = OUTLINEGRAY;
+        }
+        labels.draw();
+        // now, actually change all the labels 
+        for (var i = 0, n = PlaceholderArray.length; i < n; i++)
+        {
+            PlaceholderArray[i].draw();
+        }
+    }
+};
+
+
+labels.draw();
 setUpBase(basebox.value);
 valuebox.addVArrows();
 valuebox.value = blocksToNum();
 valuebox.update();
-
-
 
 var draw = function() {
       mouseClicked = function() {
@@ -420,5 +456,6 @@ var draw = function() {
          valuebox.update();
          basebox.handleMouseClick();
          basebox.update();
+         labels.handleMouseClick();
       };
 };

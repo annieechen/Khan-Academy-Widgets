@@ -222,10 +222,6 @@ var blocksToNum = function()
         count += parseInt(PlaceholderArray[i].multiplier, 10) * 
                  parseInt(PlaceholderArray[i].value, 10);
     }
-    if (count === Goal)
-    {
-        Goal = null;
-    }
     return count;
 };
 var numToBlocks = function(number)
@@ -484,13 +480,13 @@ var coord = function(config)
     this.y = config.y;
 };
 var StarPositions = [];
-// generate 20 random star positions
+// generate 30 random star positions
 var initStars = function()
 {
-    for (var i = 0; i < 20; i++)
+    for (var i = 0; i < 30; i++)
     {
         var temp = new coord({});
-        temp.x = random(1, CANVASWIDTH);
+        temp.x = random(0, CANVASWIDTH - LEGENDWIDTH);
         temp.y = random(1, CANVASHEIGHT);
         StarPositions.push(temp);
     }
@@ -498,11 +494,16 @@ var initStars = function()
 };
 var stars = function() 
 {
-    println("hello");
-    println(StarPositions.length);
-    for (var i = 0; i < 20; i++)
+    // let's wipe the background, and then redraw important parts every time?
+    background(WHITE);
+    gameMode.draw();
+    labels.draw();
+    setUpBase(basebox.value);
+    valuebox.addVArrows();
+    valuebox.value = blocksToNum();
+    valuebox.update();
+    for (var i = 0; i < 30; i++)
     {
-        println("hello");
         image((getImage ("cute/Star")),
               StarPositions[i].x, StarPositions[i].y, 30, 50);
         if (StarPositions[i].y > 400) 
@@ -523,7 +524,6 @@ valuebox.value = blocksToNum();
 valuebox.update();
 initStars();
 var draw = function() {
-    //stars();
       mouseClicked = function() {
          for(var i = 0, n = PlaceholderArray.length; i < n; i++)
          {
@@ -540,4 +540,10 @@ var draw = function() {
          labels.handleMouseClick();
          gameMode.handleMouseClick();
       };
+      
+      // if goal is correct
+      if(parseInt(valuebox.value, 10) === Goal)
+      {
+          stars();
+      }
 };

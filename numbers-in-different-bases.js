@@ -17,7 +17,7 @@ var WHITE = color(0, 0, 255);
 var BLACK = color(0,0,0);
 var GREEN = color(80,255, 230);
 var RED = color(0, 255, 230);
-var OUTLINEGRAY = color(279, 1, 100);
+var OUTLINEGRAY = color(279, 1, 140);
 background(WHITE);
 var MAXSAT = 255;
 // to keep loop at violet rather than back to red
@@ -27,6 +27,7 @@ var colorArray = [];
 
 // which mode of the game
 var LabelsOn = true;
+var Goal = null;
 // labels used to hold header and content
 var numHolder = function(config) 
 {
@@ -40,7 +41,7 @@ var numHolder = function(config)
 var basebox = new numHolder
 ({
     x : (CANVASWIDTH - LEGENDWIDTH - BASEWIDTH)/2,
-    y: 320,
+    y: 343,
     width : BASEWIDTH,
     value: 2,
 });
@@ -48,7 +49,7 @@ var basebox = new numHolder
 var valuebox = new numHolder
 ({
     x: (CANVASWIDTH - LEGENDWIDTH - VALUEWIDTH)/2,
-    y: 230,
+    y: 250,
     value: 0
 });
 // create based on how many are needed (will be same # as
@@ -220,6 +221,10 @@ var blocksToNum = function()
     {
         count += parseInt(PlaceholderArray[i].multiplier, 10) * 
                  parseInt(PlaceholderArray[i].value, 10);
+    }
+    if (count === Goal)
+    {
+        Goal = null;
     }
     return count;
 };
@@ -397,7 +402,7 @@ Button.prototype.draw = function()
     fill(this.color);
     rect(this.x, this.y, this.width, this.height, 5);
     fill(0, 0, 0);
-    textSize(16);
+    textSize(18);
     textAlign(CENTER, CENTER);
     text(this.label, this.x + this.width/2, this.y + this.height/2);
 };
@@ -408,6 +413,41 @@ Button.prototype.isMouseInside = function()
            mouseX < (this.x + this.width) &&
            mouseY > this.y &&
            mouseY < (this.y + this.height);
+};
+var gameMode = new Button
+({
+    x : PADDING/3,
+    y : 360,
+    width : 205,
+    label : "GAME MODE",
+    color : OUTLINEGRAY,
+});
+gameMode.handleMouseClick = function()
+{
+    if (this.isMouseInside())
+    {
+        // if goal not set
+        if(Goal === null)
+        {
+            Goal = floor(random(1, pow(basebox.value, NUMBLOCKS) -1));
+            // show the label above button
+            fill(BLACK);
+            textAlign(CENTER, CENTER);
+            textSize(22);
+            text("Target: " + Goal, this.x + this.width/2, this.y - this.height/2);
+            // change color of button itself
+            this.color = GREEN;
+        }
+        else
+        {
+            // wipe out target text
+            fill(WHITE);
+            rect(this.x, this.y - this.height, this.width, this.height);
+            Goal = null;
+            this.color = OUTLINEGRAY;
+        }
+        this.draw();
+    }
 };
 var labels = new Button
 ({
@@ -438,14 +478,52 @@ labels.handleMouseClick = function()
     }
 };
 
-
+var coord = function(config)
+{
+    this.x = config.x;
+    this.y = config.y;
+};
+var StarPositions = [];
+// generate 20 random star positions
+var initStars = function()
+{
+    for (var i = 0; i < 20; i++)
+    {
+        var temp = new coord({});
+        temp.x = random(1, CANVASWIDTH);
+        temp.y = random(1, CANVASHEIGHT);
+        StarPositions.push(temp);
+    }
+    
+};
+var stars = function() 
+{
+    println("hello");
+    println(StarPositions.length);
+    for (var i = 0; i < 20; i++)
+    {
+        println("hello");
+        image((getImage ("cute/Star")),
+              StarPositions[i].x, StarPositions[i].y, 30, 50);
+        if (StarPositions[i].y > 400) 
+        {
+            StarPositions[i].y = 0;
+        } 
+        else 
+        {
+            StarPositions[i].y += 9;
+        }
+    }
+};
+gameMode.draw();
 labels.draw();
 setUpBase(basebox.value);
 valuebox.addVArrows();
 valuebox.value = blocksToNum();
 valuebox.update();
-
+initStars();
 var draw = function() {
+    //stars();
       mouseClicked = function() {
          for(var i = 0, n = PlaceholderArray.length; i < n; i++)
          {
@@ -454,8 +532,12 @@ var draw = function() {
          valuebox.handleMouseClick();
          valuebox.value = blocksToNum();
          valuebox.update();
-         basebox.handleMouseClick();
-         basebox.update();
+         // only allow base to change if not in game mode
+         if(Goal === null)
+         {
+            basebox.handleMouseClick();
+         }
          labels.handleMouseClick();
+         gameMode.handleMouseClick();
       };
 };

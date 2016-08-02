@@ -378,8 +378,6 @@ basebox.handleMouseClick = function()
     setUpBase(this.value);
     initBlocks();
 };
-basebox.update();
-basebox.addHArrows();
 // button used for changebase
 var Button = function(config)
 {
@@ -418,6 +416,17 @@ var gameMode = new Button
     label : "GAME MODE",
     color : OUTLINEGRAY,
 });
+
+var removeGameMode = function()
+{
+     // wipe out target text
+    fill(WHITE);
+    rect(gameMode.x, gameMode.y - gameMode.height,
+         gameMode.width, gameMode.height);
+    Goal = null;
+    gameMode.color = OUTLINEGRAY;
+    gameMode.draw();
+};
 gameMode.handleMouseClick = function()
 {
     if (this.isMouseInside())
@@ -437,10 +446,7 @@ gameMode.handleMouseClick = function()
         else
         {
             // wipe out target text
-            fill(WHITE);
-            rect(this.x, this.y - this.height, this.width, this.height);
-            Goal = null;
-            this.color = OUTLINEGRAY;
+            removeGameMode();
         }
         this.draw();
     }
@@ -478,23 +484,24 @@ var coord = function(config)
 {
     this.x = config.x;
     this.y = config.y;
+    this.speed = config.speed;
 };
 var StarPositions = [];
 // generate 30 random star positions
 var initStars = function()
 {
-    for (var i = 0; i < 30; i++)
+    for (var i = 0; i < 120; i++)
     {
         var temp = new coord({});
         temp.x = random(0, CANVASWIDTH - LEGENDWIDTH);
-        temp.y = random(1, CANVASHEIGHT);
+        temp.y = random(-200, CANVASHEIGHT);
+        temp.speed = random(3,8);
         StarPositions.push(temp);
     }
     
 };
-var stars = function() 
-{
-    // let's wipe the background, and then redraw important parts every time?
+var createScreen = function()
+{    // let's wipe the background, and then redraw important parts every time?
     background(WHITE);
     gameMode.draw();
     labels.draw();
@@ -502,27 +509,35 @@ var stars = function()
     valuebox.addVArrows();
     valuebox.value = blocksToNum();
     valuebox.update();
-    for (var i = 0; i < 30; i++)
+    basebox.update();
+    basebox.addHArrows();
+};
+var stars = function() 
+{
+    // let's wipe the background, and then redraw important parts every time?
+    createScreen();
+    for (var i = 0; i < StarPositions.length; i++)
     {
         image((getImage ("cute/Star")),
               StarPositions[i].x, StarPositions[i].y, 30, 50);
         if (StarPositions[i].y > 400) 
         {
-            StarPositions[i].y = 0;
+            StarPositions.splice(i, 1);
         } 
         else 
         {
-            StarPositions[i].y += 9;
+            StarPositions[i].y += StarPositions[i].speed;
         }
     }
+    if (StarPositions.length === 0)
+    {
+        initStars();
+        // set off game mode
+        removeGameMode();
+    }
 };
-gameMode.draw();
-labels.draw();
-setUpBase(basebox.value);
-valuebox.addVArrows();
-valuebox.value = blocksToNum();
-valuebox.update();
-initStars();
+createScreen();
+ initStars();
 var draw = function() {
       mouseClicked = function() {
          for(var i = 0, n = PlaceholderArray.length; i < n; i++)

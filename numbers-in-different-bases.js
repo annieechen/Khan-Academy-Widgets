@@ -26,7 +26,6 @@ var MAXHUE = 200;
 var colorArray = [];
 
 // which mode of the game
-var LabelsOn = true;
 var Goal = null;
 // labels used to hold header and content
 var numHolder = function(config) 
@@ -90,7 +89,7 @@ var Placeholder = function(config)
     this.width = config.width || BLOCKWIDTH;
     this.height = config.height || 110;
     this.multiplier = config.multiplier || 0;
-    this.value = config.value; 
+    this.on = true; 
     this.onClick = config.onClick;
 };
 Placeholder.prototype.drawArrow = function(isTop, arrowColor)
@@ -143,19 +142,7 @@ Placeholder.prototype.update = function()
         this.drawArrow(false, WHITE);
     }
 };
-Placeholder.prototype.draw = function() {
-    // wipe out existing letters if there
-    fill(WHITE);
-    rect(this.x, this.y + this.height + PADDING, this.width, PADDING*3);
-    if(LabelsOn)
-    {
-        fill(BLACK);
-        // add label below to show what digit this is
-        textSize(24);
-        text(this.value, this.x + this.width/2, this.y + this.height + PADDING*3);
-    }
-    this.update();
-};
+
 // control whether user is mousing over block itself
 Placeholder.prototype.isMouseInsideMain = function()
 {
@@ -240,29 +227,7 @@ var numToBlocks = function(number)
         index --;
     }
 }; 
-var initBlocks = function()
-{
-    // clear placeholder array
-    PlaceholderArray.length = 0;
-    // make blocks right oriented (so can start w/ 0)
-    for (var i = CANVASWIDTH - LEGENDWIDTH - BLOCKWIDTH - PADDING, index = 0; 
-         i > 0; i -= BLOCKWIDTH + PADDING, index++)
-    {
-        var temp = new Placeholder({});
-        temp.x = i;
-        temp.value = pow(basebox.value, index);
-        temp.multiplier = 0;
-        temp.draw();
-        PlaceholderArray.push(temp);
-    }
-    numToBlocks(valuebox.value);
-};
-var setUpBase = function(base)
-{
-    createColorArray(base);
-    legend(base);
-    initBlocks();
-};
+
 // draw white inside box and print value
 numHolder.prototype.update = function()
 {
@@ -361,6 +326,29 @@ basebox.isWithinRightArrow = function()
            mouseY > this.y + PADDING*(4/3) &&
            mouseY < this.y + this.height - PADDING*(4/3);
 };
+var initBlocks = function()
+{
+    // clear placeholder array
+    PlaceholderArray.length = 0;
+    // make blocks right oriented (so can start w/ 0)
+    for (var i = CANVASWIDTH - LEGENDWIDTH - BLOCKWIDTH - PADDING, index = 0; 
+         i > 0; i -= BLOCKWIDTH + PADDING, index++)
+    {
+        var temp = new Placeholder({});
+        temp.x = i;
+        temp.value = pow(basebox.value, index);
+        temp.multiplier = 0;
+        temp.draw();
+        PlaceholderArray.push(temp);
+    }
+    numToBlocks(valuebox.value);
+};
+var setUpBase = function(base)
+{
+    createColorArray(base);
+    legend(base);
+    initBlocks();
+};
 basebox.handleMouseClick = function()
 {
     if(this.isWithinRightArrow() && this.value < 16)
@@ -388,6 +376,7 @@ var Button = function(config)
     this.color = config.color;
     this.label = config.label || "Click";
     this.onClick = config.onClick || function() {};
+    this.value = config.value;
 };
 // actually draw the button on canvas
 Button.prototype.draw = function() 
@@ -427,43 +416,74 @@ var removeGameMode = function()
     gameMode.color = OUTLINEGRAY;
     gameMode.draw();
 };
+gameMode.setGoal = function()
+{
+    // if goal not set
+    if(Goal === null)
+    {
+        do
+        {
+            Goal = floor(random(1, pow(basebox.value, NUMBLOCKS) -1));
+        } 
+        while(Goal === valuebox.value);
+        // show the label above button
+        fill(BLACK);
+        textAlign(CENTER, CENTER);
+        textSize(22);
+        text("Target: " + Goal, this.x + this.width/2, this.y - this.height/2);
+        // change color of button itself
+        this.color = GREEN;
+    }
+    else
+    {
+        // wipe out target text
+        removeGameMode();
+    }
+};
 gameMode.handleMouseClick = function()
 {
     if (this.isMouseInside())
     {
-        // if goal not set
-        if(Goal === null)
-        {
-            Goal = floor(random(1, pow(basebox.value, NUMBLOCKS) -1));
-            // show the label above button
-            fill(BLACK);
-            textAlign(CENTER, CENTER);
-            textSize(22);
-            text("Target: " + Goal, this.x + this.width/2, this.y - this.height/2);
-            // change color of button itself
-            this.color = GREEN;
-        }
-        else
-        {
-            // wipe out target text
-            removeGameMode();
-        }
+        gameMode.setGoal();
         this.draw();
     }
 };
+var explanations = new Button
+({
+    x : (CANVASWIDTH - LEGENDWIDTH) * (5/8),
+    y : 360,
+    label : "EXPLAIN",
+    width : 95,
+    color : GREEN,
+});
 var labels = new Button
 ({
-    x : (CANVASWIDTH - LEGENDWIDTH)*(7/8),
+    x : (CANVASWIDTH - LEGENDWIDTH)*(13/16),
     y : 360,
     label : "LABELS",
-    color : GREEN
+    color : GREEN,
+    width : 95,
+    on : true,
 });
+Placeholder.prototype.draw = function() {
+    // wipe out existing letters if there
+    fill(WHITE);
+    rect(this.x, this.y + this.height + PADDING, this.width, PADDING*3);
+    if(labels.on)
+    {
+        fill(BLACK);
+        // add label below to show what digit this is
+        textSize(24);
+        text(this.value, this.x + this.width/2, this.y + this.height + PADDING*3);
+    }
+    this.update();
+};
 labels.handleMouseClick = function()
 {
     if (this.isMouseInside())
     {
-        LabelsOn = !LabelsOn;
-        if(LabelsOn)
+        this.on = !this.on;
+        if(this.on)
         {
             this.color = GREEN;
         } 
@@ -511,6 +531,8 @@ var createScreen = function()
     valuebox.update();
     basebox.update();
     basebox.addHArrows();
+    explanations.draw();
+    initBlocks();
 };
 var stars = function() 
 {
@@ -537,28 +559,31 @@ var stars = function()
     }
 };
 createScreen();
- initStars();
+initStars();
 var draw = function() {
-      mouseClicked = function() {
-         for(var i = 0, n = PlaceholderArray.length; i < n; i++)
-         {
-            PlaceholderArray[i].handleMouseClick();
-         }
-         valuebox.handleMouseClick();
-         valuebox.value = blocksToNum();
-         valuebox.update();
-         // only allow base to change if not in game mode
-         if(Goal === null)
-         {
-            basebox.handleMouseClick();
-         }
-         labels.handleMouseClick();
-         gameMode.handleMouseClick();
-      };
-      
       // if goal is correct
       if(parseInt(valuebox.value, 10) === Goal)
       {
           stars();
+      }
+      else
+      {
+            mouseClicked = function() 
+            {
+                for(var i = 0, n = PlaceholderArray.length; i < n; i++)
+                {
+                    PlaceholderArray[i].handleMouseClick();
+                }
+                valuebox.handleMouseClick();
+                valuebox.value = blocksToNum();
+                valuebox.update();
+                // only allow base to change if not in game mode
+                if(Goal === null)
+                {
+                    basebox.handleMouseClick();
+                }
+                labels.handleMouseClick();
+                gameMode.handleMouseClick();
+            };
       }
 };

@@ -1,15 +1,15 @@
+// used to place graphics in proper place on canvas
 var CANVASWIDTH = 600;
 var CANVASHEIGHT = 400;
 var PADDING = 15;
-
 var LEGENDWIDTH= 60;
-var VALUEWIDTH = 192;
+var VALUEWIDTH = 190;
 var BASEWIDTH = 80;
-var BLOCKWIDTH = 91;
+var BLOCKWIDTH = 90;
 var NUMBLOCKS = 5;
-// can support up to base 16
+// used to label legend + blocks
 var digits = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
-
+// fonts and colors
 var f = createFont("monospace");
 textFont(f);
 colorMode(HSB);
@@ -18,12 +18,14 @@ var BLACK = color(0,0,0);
 var GREEN = color(80,255, 230);
 var RED = color(0, 255, 230);
 var OUTLINEGRAY = color(279, 1, 140);
-background(WHITE);
 var MAXSAT = 255;
 // to keep loop at violet rather than back to red
 var MAXHUE = 200;
 // to store the colors in HSB for clicking through
 var colorArray = [];
+// have to initialize background now to override from default
+background(WHITE);
+
 
 // which mode of the game
 var Goal = null;
@@ -227,7 +229,29 @@ var numToBlocks = function(number)
         index --;
     }
 }; 
-
+var initBlocks = function()
+{
+    // clear placeholder array
+    PlaceholderArray.length = 0;
+    // make blocks right oriented (so can start w/ 0)
+    for (var i = CANVASWIDTH - LEGENDWIDTH - BLOCKWIDTH - PADDING, index = 0; 
+         i > 0; i -= BLOCKWIDTH + PADDING, index++)
+    {
+        var temp = new Placeholder({});
+        temp.x = i;
+        temp.value = pow(basebox.value, index);
+        temp.multiplier = 0;
+        temp.draw();
+        PlaceholderArray.push(temp);
+    }
+    numToBlocks(valuebox.value);
+};
+var setUpBase = function(base)
+{
+    createColorArray(base);
+    legend(base);
+    initBlocks();
+};
 // draw white inside box and print value
 numHolder.prototype.update = function()
 {
@@ -326,29 +350,6 @@ basebox.isWithinRightArrow = function()
            mouseY > this.y + PADDING*(4/3) &&
            mouseY < this.y + this.height - PADDING*(4/3);
 };
-var initBlocks = function()
-{
-    // clear placeholder array
-    PlaceholderArray.length = 0;
-    // make blocks right oriented (so can start w/ 0)
-    for (var i = CANVASWIDTH - LEGENDWIDTH - BLOCKWIDTH - PADDING, index = 0; 
-         i > 0; i -= BLOCKWIDTH + PADDING, index++)
-    {
-        var temp = new Placeholder({});
-        temp.x = i;
-        temp.value = pow(basebox.value, index);
-        temp.multiplier = 0;
-        temp.draw();
-        PlaceholderArray.push(temp);
-    }
-    numToBlocks(valuebox.value);
-};
-var setUpBase = function(base)
-{
-    createColorArray(base);
-    legend(base);
-    initBlocks();
-};
 basebox.handleMouseClick = function()
 {
     if(this.isWithinRightArrow() && this.value < 16)
@@ -376,7 +377,7 @@ var Button = function(config)
     this.color = config.color;
     this.label = config.label || "Click";
     this.onClick = config.onClick || function() {};
-    this.value = config.value;
+    this.on = config.on;
 };
 // actually draw the button on canvas
 Button.prototype.draw = function() 
@@ -524,7 +525,6 @@ var createScreen = function()
 {    // let's wipe the background, and then redraw important parts every time?
     background(WHITE);
     gameMode.draw();
-    labels.draw();
     setUpBase(basebox.value);
     valuebox.addVArrows();
     valuebox.value = blocksToNum();
@@ -532,7 +532,7 @@ var createScreen = function()
     basebox.update();
     basebox.addHArrows();
     explanations.draw();
-    initBlocks();
+    labels.draw();
 };
 var stars = function() 
 {

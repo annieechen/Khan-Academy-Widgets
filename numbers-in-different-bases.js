@@ -1,31 +1,33 @@
-// used to place graphics in proper place on canvas
-var CANVASWIDTH = 600;
-var CANVASHEIGHT = 400;
-var PADDING = 15;
-var LEGENDWIDTH= 60;
-var VALUEWIDTH = 190;
-var BASEWIDTH = 80;
-var BLOCKWIDTH = 90;
-var NUMBLOCKS = 5;
-// used to label legend + blocks
-var digits = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
-// fonts and colors
-var f = createFont("monospace");
-textFont(f);
-colorMode(HSB);
-var WHITE = color(0, 0, 255);
-var BLACK = color(0,0,0);
-var GREEN = color(80,255, 230);
-var RED = color(0, 255, 230);
-var OUTLINEGRAY = color(279, 1, 140);
-var MAXSAT = 255;
-// to keep loop at violet rather than back to red
-var MAXHUE = 200;
-// to store the colors in HSB for clicking through
-var colorArray = [];
-// have to initialize background now to override from default
-background(WHITE);
-
+// initializing variables 
+{
+    // used to place graphics in proper place on canvas
+    var CANVASWIDTH = 600;
+    var CANVASHEIGHT = 400;
+    var PADDING = 15;
+    var LEGENDWIDTH= 60;
+    var VALUEWIDTH = 190;
+    var BASEWIDTH = 80;
+    var BLOCKWIDTH = 90;
+    var NUMBLOCKS = 5;
+    // used to label legend + blocks
+    var digits = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
+    // fonts and colors
+    var f = createFont("monospace");
+    textFont(f);
+    colorMode(HSB);
+    var WHITE = color(0, 0, 255);
+    var BLACK = color(0,0,0);
+    var GREEN = color(80,255, 230);
+    var RED = color(0, 255, 230);
+    var OUTLINEGRAY = color(279, 1, 140);
+    var MAXSAT = 255;
+    // to keep loop at violet rather than back to red
+    var MAXHUE = 200;
+    // to store the colors in HSB for clicking through
+    var colorArray = [];
+    // have to initialize background now to override from default
+    background(WHITE);
+}
 
 // which mode of the game
 var Goal = null;
@@ -398,6 +400,27 @@ Button.prototype.isMouseInside = function()
            mouseY > this.y &&
            mouseY < (this.y + this.height);
 };
+Button.prototype.handleMouseClick = function()
+{
+    if (this.isMouseInside())
+    {
+        this.on = !this.on;
+        if(this.on)
+        {
+            this.color = GREEN;
+        } 
+        else
+        {
+            this.color = OUTLINEGRAY;
+        }
+        this.draw();
+        // now, actually change all the labels 
+        for (var i = 0, n = PlaceholderArray.length; i < n; i++)
+        {
+            PlaceholderArray[i].draw();
+        }
+    }
+};
 var gameMode = new Button
 ({
     x : PADDING/3,
@@ -455,7 +478,8 @@ var explanations = new Button
     y : 360,
     label : "EXPLAIN",
     width : 95,
-    color : GREEN,
+    color : OUTLINEGRAY,
+    on : false,
 });
 var labels = new Button
 ({
@@ -478,27 +502,6 @@ Placeholder.prototype.draw = function() {
         text(this.value, this.x + this.width/2, this.y + this.height + PADDING*3);
     }
     this.update();
-};
-labels.handleMouseClick = function()
-{
-    if (this.isMouseInside())
-    {
-        this.on = !this.on;
-        if(this.on)
-        {
-            this.color = GREEN;
-        } 
-        else
-        {
-            this.color = OUTLINEGRAY;
-        }
-        labels.draw();
-        // now, actually change all the labels 
-        for (var i = 0, n = PlaceholderArray.length; i < n; i++)
-        {
-            PlaceholderArray[i].draw();
-        }
-    }
 };
 
 var coord = function(config)
@@ -584,6 +587,7 @@ var draw = function() {
                 }
                 labels.handleMouseClick();
                 gameMode.handleMouseClick();
+                explanations.handleMouseClick();
             };
       }
 };

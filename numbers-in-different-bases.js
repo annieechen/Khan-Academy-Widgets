@@ -4,11 +4,15 @@
     var CANVASWIDTH = 600;
     var CANVASHEIGHT = 400;
     var PADDING = 15;
-    var LEGENDWIDTH= 60;
+    var LEGENDWIDTH= 36;
+    var LEGENDHEIGHT = 400;
     var VALUEWIDTH = 190;
     var BASEWIDTH = 80;
-    var BLOCKWIDTH = 90;
+    var BLOCKWIDTH = 70;
     var NUMBLOCKS = 5;
+    var BUTTONWIDTH = 150;
+    var BLOCKHEIGHT = 84;
+    var YPOS = 30;
     // used to label legend + blocks
     var digits = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
     // fonts and colors
@@ -37,22 +41,22 @@ var numHolder = function(config)
     this.x = config.x;
     this.y = config.y;
     this.width = config.width ||VALUEWIDTH;
-    this.height = config.height||63;
+    this.height = config.height||60;
     this.value = config.value;
 };
 
 var basebox = new numHolder
 ({
     x : (CANVASWIDTH - LEGENDWIDTH - BASEWIDTH)/2,
-    y: 343,
+    y: 329,
     width : BASEWIDTH,
-    value: 2,
+    value: 2
 });
 
 var valuebox = new numHolder
 ({
-    x: (CANVASWIDTH - LEGENDWIDTH - VALUEWIDTH)/2,
-    y: 250,
+    x: BLOCKWIDTH * 6,
+    y: YPOS ,
     value: 0
 });
 // create based on how many are needed (will be same # as
@@ -69,8 +73,8 @@ var createColorArray = function(baseNum)
 
 var legend = function(baseNum)
 {
-    var blockHeight = CANVASHEIGHT/baseNum;
-    for(var i = 0, index = 0; i <= CANVASHEIGHT; i+= blockHeight, index++)
+    var blockHeight = LEGENDHEIGHT/baseNum;
+    for(var i = 0, index = 0; i < LEGENDHEIGHT; i+= blockHeight, index++)
     {
         // create a rectangle w/ color and la
         fill(colorArray[index]);
@@ -81,17 +85,17 @@ var legend = function(baseNum)
         textAlign(CENTER, CENTER);
         fill(BLACK);
         // calculate proper text size for label
-        textSize(18 + 16/baseNum);
+        textSize(14 + 16/baseNum);
         text(digits[index],CANVASWIDTH - (LEGENDWIDTH/2), i + blockHeight/2);
     }
 };
 // object for each number block
 var Placeholder = function(config) 
 {
-    this.x = config.x || 12;
-    this.y = config.y || 40;
+    this.x = config.x;
+    this.y = YPOS;
     this.width = config.width || BLOCKWIDTH;
-    this.height = config.height || 110;
+    this.height = config.height || BLOCKHEIGHT;
     this.multiplier = config.multiplier || 0;
     this.on = true; 
     this.onClick = config.onClick;
@@ -236,7 +240,7 @@ var initBlocks = function()
     // clear placeholder array
     PlaceholderArray.length = 0;
     // make blocks right oriented (so can start w/ 0)
-    for (var i = CANVASWIDTH - LEGENDWIDTH - BLOCKWIDTH - PADDING, index = 0; 
+    for (var i = (BLOCKWIDTH) * 5, index = 0; 
          i > 0; i -= BLOCKWIDTH + PADDING, index++)
     {
         var temp = new Placeholder({});
@@ -246,6 +250,12 @@ var initBlocks = function()
         temp.draw();
         PlaceholderArray.push(temp);
     }
+    // put equal sign
+    textSize(54);
+    fill(BLACK);
+    textAlign(LEFT, CENTER);
+    text("=", (BLOCKWIDTH + PADDING) * 5 ,  YPOS + BLOCKHEIGHT/2);
+    // update valuebox
     numToBlocks(valuebox.value);
 };
 var setUpBase = function(base)
@@ -276,7 +286,7 @@ numHolder.prototype.update = function()
     textSize(this.width/wordwidth);
     // centering text within box
     text(this.value,
-             this.x + this.width/2, this.y + this.height/2 - PADDING/8);
+             this.x + this.width/2, this.y + this.height/2);
 };
 
 
@@ -387,10 +397,16 @@ Button.prototype.draw = function()
     noStroke();
     fill(this.color);
     rect(this.x, this.y, this.width, this.height, 5);
-    fill(0, 0, 0);
+    fill(BLACK);
     textSize(18);
     textAlign(CENTER, CENTER);
     text(this.label, this.x + this.width/2, this.y + this.height/2);
+};
+
+// if button needs to be erased
+Button.prototype.override = function() {
+    fill(WHITE);
+    rect(this.x, this.y, this.width, this.height, 5);
 };
 // control whether user is mousing over button
 Button.prototype.isMouseInside = function()
@@ -400,6 +416,7 @@ Button.prototype.isMouseInside = function()
            mouseY > this.y &&
            mouseY < (this.y + this.height);
 };
+
 Button.prototype.handleMouseClick = function()
 {
     if (this.isMouseInside())
@@ -419,13 +436,19 @@ Button.prototype.handleMouseClick = function()
         {
             PlaceholderArray[i].draw();
         }
+        // if additional function exists, call it
+        if( typeof this.extra === "function")
+        {
+            this.extra();
+        }
     }
 };
+
 var gameMode = new Button
 ({
-    x : PADDING/3,
-    y : 360,
-    width : 205,
+    x : CANVASWIDTH - BUTTONWIDTH - LEGENDWIDTH - PADDING,
+    y : 320,
+    width : BUTTONWIDTH + PADDING*(2/3),
     label : "GAME MODE",
     color : OUTLINEGRAY,
 });
@@ -433,6 +456,8 @@ var gameMode = new Button
 var removeGameMode = function()
 {
      // wipe out target text
+    stroke(WHITE);
+    strokeWeight(4);
     fill(WHITE);
     rect(gameMode.x, gameMode.y - gameMode.height,
          gameMode.width, gameMode.height);
@@ -453,7 +478,7 @@ gameMode.setGoal = function()
         // show the label above button
         fill(BLACK);
         textAlign(CENTER, CENTER);
-        textSize(22);
+        textSize(20);
         text("Target: " + Goal, this.x + this.width/2, this.y - this.height/2);
         // change color of button itself
         this.color = GREEN;
@@ -474,22 +499,34 @@ gameMode.handleMouseClick = function()
 };
 var explanations = new Button
 ({
-    x : (CANVASWIDTH - LEGENDWIDTH) * (5/8),
+    x : CANVASWIDTH - BUTTONWIDTH - LEGENDWIDTH -PADDING,
     y : 360,
     label : "EXPLAIN",
-    width : 95,
+    width : BUTTONWIDTH/2,
     color : OUTLINEGRAY,
     on : false,
 });
 var labels = new Button
 ({
-    x : (CANVASWIDTH - LEGENDWIDTH)*(13/16),
+    x : CANVASWIDTH - BUTTONWIDTH/2 - LEGENDWIDTH - PADDING/2 ,
     y : 360,
     label : "LABELS",
     color : GREEN,
-    width : 95,
+    width : BUTTONWIDTH/2,
     on : true,
 });
+// make it so explain button doesn't show if labels is off
+labels.extra = function()
+{
+    if(!this.on)
+    {
+        explanations.override();
+    }
+    else
+    {
+        explanations.draw();
+    }
+};
 Placeholder.prototype.draw = function() {
     // wipe out existing letters if there
     fill(WHITE);
@@ -587,7 +624,10 @@ var draw = function() {
                 }
                 labels.handleMouseClick();
                 gameMode.handleMouseClick();
-                explanations.handleMouseClick();
+                if(labels.on)
+                {
+                    explanations.handleMouseClick();
+                }
             };
       }
 };

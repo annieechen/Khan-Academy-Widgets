@@ -3,10 +3,10 @@
     // used to place graphics in proper place on canvas
     var CANVASWIDTH = 600;
     var CANVASHEIGHT = 400;
-    var PADDING = 15;
-    var LEGENDWIDTH= 36;
+    var PADDING = 10;
+    var LEGENDWIDTH= 35;
     var LEGENDHEIGHT = 400;
-    var VALUEWIDTH = 190;
+    var VALUEWIDTH = 160;
     var BASEWIDTH = 80;
     var BLOCKWIDTH = 70;
     var NUMBLOCKS = 5;
@@ -55,8 +55,9 @@ var basebox = new numHolder
 
 var valuebox = new numHolder
 ({
-    x: BLOCKWIDTH * 6,
-    y: YPOS ,
+    x: BLOCKWIDTH * 6 - PADDING,
+    y: YPOS,
+    height: 80,
     value: 0
 });
 // create based on how many are needed (will be same # as
@@ -240,7 +241,7 @@ var initBlocks = function()
     // clear placeholder array
     PlaceholderArray.length = 0;
     // make blocks right oriented (so can start w/ 0)
-    for (var i = (BLOCKWIDTH) * 5, index = 0; 
+    for (var i = (BLOCKWIDTH) * 5 - PADDING*2, index = 0; 
          i > 0; i -= BLOCKWIDTH + PADDING, index++)
     {
         var temp = new Placeholder({});
@@ -250,19 +251,14 @@ var initBlocks = function()
         temp.draw();
         PlaceholderArray.push(temp);
     }
-    // put equal sign
-    textSize(54);
-    fill(BLACK);
-    textAlign(LEFT, CENTER);
-    text("=", (BLOCKWIDTH + PADDING) * 5 ,  YPOS + BLOCKHEIGHT/2);
     // update valuebox
     numToBlocks(valuebox.value);
 };
 var setUpBase = function(base)
 {
     createColorArray(base);
-    legend(base);
     initBlocks();
+    legend(base);
 };
 // draw white inside box and print value
 numHolder.prototype.update = function()
@@ -287,6 +283,10 @@ numHolder.prototype.update = function()
     // centering text within box
     text(this.value,
              this.x + this.width/2, this.y + this.height/2);
+    // put equal sign
+    textSize(54);
+    fill(BLACK);
+    text("=", BLOCKWIDTH * 6 ,  YPOS + BLOCKHEIGHT/2);
 };
 
 

@@ -15,6 +15,7 @@
     var YPOS = 30;
     // used to label legend + blocks
     var digits = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
+    var exponents = ['⁰', '¹', '²', '³', '⁴', '⁵'];
     // fonts and colors
     var f = createFont("monospace");
     textFont(f);
@@ -22,7 +23,7 @@
     var WHITE = color(0, 0, 255);
     var BLACK = color(0,0,0);
     var GREEN = color(80,255, 230);
-    var RED = color(0, 255, 230);
+    var RED = color(0, 143, 129);
     var OUTLINEGRAY = color(279, 1, 140);
     var MAXSAT = 255;
     // to keep loop at violet rather than back to red
@@ -99,6 +100,8 @@ var Placeholder = function(config)
     this.height = config.height || BLOCKHEIGHT;
     this.multiplier = config.multiplier || 0;
     this.on = true; 
+    this.value = config.value;
+    this.index = config.index;
     this.onClick = config.onClick;
 };
 Placeholder.prototype.drawArrow = function(isTop, arrowColor)
@@ -247,6 +250,7 @@ var initBlocks = function()
         var temp = new Placeholder({});
         temp.x = i;
         temp.value = pow(basebox.value, index);
+        temp.index = index;
         temp.multiplier = 0;
         temp.draw();
         PlaceholderArray.push(temp);
@@ -515,6 +519,24 @@ var labels = new Button
     width : BUTTONWIDTH/2,
     on : true,
 });
+var reset = new Button
+({
+    x : 0,
+    y : 360,
+    label : "RESET",
+    color : RED,
+    width : BUTTONWIDTH/2,
+    on: true,
+});
+reset.handleMouseClick = function()
+{
+    if(this.isMouseInside())
+    {
+        valuebox.value = 0;
+        numToBlocks(valuebox.value);
+        valuebox.update();
+    }
+};
 // make it so explain button doesn't show if labels is off
 labels.extra = function()
 {
@@ -530,13 +552,21 @@ labels.extra = function()
 Placeholder.prototype.draw = function() {
     // wipe out existing letters if there
     fill(WHITE);
-    rect(this.x, this.y + this.height + PADDING, this.width, PADDING*3);
+    rect(this.x, this.y + this.height + PADDING, this.width, PADDING*10);
     if(labels.on)
     {
         fill(BLACK);
         // add label below to show what digit this is
-        textSize(24);
-        text(this.value, this.x + this.width/2, this.y + this.height + PADDING*3);
+        textSize(22);
+        text(this.value, this.x + this.width/2, this.y + this.height + PADDING*4);
+        // if explanations, clarify how value got there
+        if(explanations.on)
+        {
+            fill(OUTLINEGRAY);
+            textSize(18);
+            text(basebox.value + exponents[this.index],
+                 this.x + this.width/2, this.y + this.height + PADDING*6);
+        }
     }
     this.update();
 };
@@ -573,6 +603,7 @@ var createScreen = function()
     basebox.addHArrows();
     explanations.draw();
     labels.draw();
+    reset.draw();
 };
 var stars = function() 
 {
@@ -624,6 +655,7 @@ var draw = function() {
                 }
                 labels.handleMouseClick();
                 gameMode.handleMouseClick();
+                reset.handleMouseClick();
                 if(labels.on)
                 {
                     explanations.handleMouseClick();
